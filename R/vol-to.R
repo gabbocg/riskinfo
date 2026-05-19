@@ -1,6 +1,6 @@
 # Volatility, turnover, and liquidity summaries over event windows
-
 vol_to <- function(df, lo, hi, sfx) {
+  
   df |>
     filter(td >= lo, td <= hi) |>
     group_by(permno, actdate) |>
@@ -10,9 +10,11 @@ vol_to <- function(df, lo, hi, sfx) {
       "to_{sfx}"  := mean(vol / shrout, na.rm = TRUE),
       .groups = "drop"
     )
+  
 }
 
 vol_to_liq <- function(df, lo, hi, sfx) {
+  
   df |>
     filter(td >= lo, td <= hi) |>
     group_by(permno, actdate) |>
@@ -28,4 +30,5 @@ vol_to_liq <- function(df, lo, hi, sfx) {
       ) / sum(vol, na.rm = TRUE),
       .groups = "drop"
     )
+  
 }

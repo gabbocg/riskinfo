@@ -124,8 +124,8 @@ ssbase <- ssbase |>
 
 # S&P 500 membership flag
 snp500 <- dbGetQuery(
-    wrds, "SELECT permno, start, ending FROM crsp.msp500list"
-  ) |>
+  wrds, "SELECT permno, start, ending FROM crsp.msp500list"
+) |>
   mutate(across(c(start, ending), as.Date))
 
 ssbase <- ssbase |>
@@ -152,12 +152,12 @@ ssbase <- ssbase |>
 
 cusips_ev <- unique(ssbase$cusip)
 opt_years <- as.integer(format(beg_date, "%Y")):
-             as.integer(format(end_date, "%Y"))
+  as.integer(format(end_date, "%Y"))
 opt_years <- unique(c(min(opt_years) - 1L, opt_years))   # include prior year
 
 opt_raw <- lapply(opt_years, function(yr) {
   
-    dbGetQuery(wrds, sprintf("
+  dbGetQuery(wrds, sprintf("
         SELECT d.cusip, o.date, o.days, o.impl_volatility AS iv
         FROM optionm.stdopd%d o
         JOIN optionm.securd   d ON o.secid = d.secid
@@ -167,13 +167,13 @@ opt_raw <- lapply(opt_years, function(yr) {
           AND o.days IN (30, 60, 122, 182, 365)
           AND o.date BETWEEN '%s' AND '%s'
       ",
-      yr,
-      paste0("'", cusips_ev, "'", collapse = ","),
-      format(beg_date - 60, "%Y-%m-%d"),
-      format(end_date + 60, "%Y-%m-%d")
-    ))
+                           yr,
+                           paste0("'", cusips_ev, "'", collapse = ","),
+                           format(beg_date - 60, "%Y-%m-%d"),
+                           format(end_date + 60, "%Y-%m-%d")
+  ))
   
-  }) |>
+}) |>
   bind_rows() |>
   mutate(date = as.Date(date))
 
@@ -281,10 +281,10 @@ crsp_daily <- dbGetQuery(wrds, sprintf("
     JOIN crsp.dsi i ON s.dlycaldt = i.date
     WHERE s.permno = ANY(ARRAY[%s])
       AND s.dlycaldt BETWEEN '%s' AND '%s'",
-  paste(permnos_ev, collapse = ","),
-  format(beg_date - 400L, "%Y-%m-%d"),
-  format(end_date + 400L, "%Y-%m-%d")
-  )) |>
+                                       paste(permnos_ev, collapse = ","),
+                                       format(beg_date - 400L, "%Y-%m-%d"),
+                                       format(end_date + 400L, "%Y-%m-%d")
+)) |>
   mutate(date = as.Date(date))
 
 crsp_ev <- ssbase |>
@@ -368,11 +368,11 @@ smithso_jar <- ssbase |>
     ayear      = year(actdate),
     amonth     = month(actdate),
     ayearmonth = ayear * 100L + amonth,
-
+    
     # ── Short-horizon risk slope (SIGQP) ──────────────────────────────────
     # d(IV^2/252) / d(1/maturity) evaluated at 30 and 60 days, td = -2
     sigqp = ((iv30_m2 / sqrt(252)) ^ 2 - (iv60_m2 / sqrt(252)) ^ 2) / (1 / 30 - 1 / 60),
-
+    
     # ── Changes in option-implied variance: maturity * d(IV^2/252) ────────
     # Compares td = 2 (post) vs td = -2 (pre)
     delta_iv30  =  30 * ((iv30_p2  / sqrt(252)) ^ 2 - (iv30_m2  / sqrt(252)) ^ 2),
@@ -380,19 +380,19 @@ smithso_jar <- ssbase |>
     delta_iv122 = 122 * ((iv122_p2 / sqrt(252)) ^ 2 - (iv122_m2 / sqrt(252)) ^ 2),
     delta_iv182 = 182 * ((iv182_p2 / sqrt(252)) ^ 2 - (iv182_m2 / sqrt(252)) ^ 2),
     delta_iv365 = 365 * ((iv365_p2 / sqrt(252)) ^ 2 - (iv365_m2 / sqrt(252)) ^ 2),
-
+    
     # ── Risk information measures: RI = DeltaIV + SIGQP ──────────────────
     ri30  = delta_iv30  + sigqp,
     ri60  = delta_iv60  + sigqp,
     ri122 = delta_iv122 + sigqp,
     ri182 = delta_iv182 + sigqp,
     ri365 = delta_iv365 + sigqp,
-
+    
     abri30  = abs(ri30),
     abri122 = abs(ri122),
     abri182 = abs(ri182),
     abri365 = abs(ri365),
-
+    
     # ── Scaled RI: divide by baseline diffusion variance ──────────────────
     # DiffVol = maturity * (SIGB_pre1 / sqrt(252))^2
     diffvol30  =  30 * (sigb_pre1 / sqrt(252)) ^ 2,
@@ -401,35 +401,35 @@ smithso_jar <- ssbase |>
     sri30   = if_else(diffvol30  > 0, ri30    / diffvol30,  NA_real_),
     sari182 = if_else(diffvol182 > 0, abri182 / diffvol182, NA_real_),
     sri182  = if_else(diffvol182 > 0, ri182   / diffvol182, NA_real_),
-
+    
     # ── Volatility changes ────────────────────────────────────────────────
     ppvma = if_else(vma_26_5 > 0 & vma_5_26   > 0, 100 * (vma_5_26  - vma_26_5),  NA_real_),
     dvma  = if_else(vma_5_26 > 0 & vma_27_127 > 0, 100 * (vma_5_26 - vma_27_127), NA_real_),
     ppalr = if_else(alr_26_5 > 0 & alr_5_26 > 0, log(alr_5_26 / alr_26_5), NA_real_),
     ppbas = if_else(bas_26_5 > 0 & bas_5_26 > 0, log(bas_5_26 / bas_26_5), NA_real_),
-
+    
     # ── Idiosyncratic volatility changes (window pair 1) ──────────────────
     delta_siv  = 100 * (siv_post - siv_pre),
     dsiv       = if_else(siv_post > 0 & siv_pre > 0, log(siv_post / siv_pre), NA_real_),
     delta_ivol = 100 * (idiovol_post - idiovol_pre),
     divol      = if_else(idiovol_post > 0 & idiovol_pre > 0, log(idiovol_post / idiovol_pre), NA_real_),
-
+    
     # ── Beta changes (window pair 1, levels) ──────────────────────────────
     delta_mktbeta_sq = mktbeta_post ^ 2 - mktbeta_pre ^ 2,
     delta_smbbeta_sq = smbbeta_post ^ 2 - smbbeta_pre ^ 2,
     delta_hmlbeta_sq = hmlbeta_post ^ 2 - hmlbeta_pre ^ 2,
     delta_umdbeta_sq = umdbeta_post ^ 2 - umdbeta_pre ^ 2,
-
+    
     # ── Idiosyncratic volatility changes (window pair 2) ──────────────────
     delta_ivol2 = 100 * (idiovol_post2 - idiovol_pre2),
     divol2      = if_else(idiovol_post2 > 0 & idiovol_pre2 > 0, log(idiovol_post2 / idiovol_pre2), NA_real_),
-
+    
     # ── Beta changes (window pair 2, log of squared betas) ────────────────
     delta_mktbeta_sq2 = if_else(mktbeta_post ^ 2 > 0 & mktbeta_pre ^ 2 > 0, log(mktbeta_post ^ 2 / mktbeta_pre ^ 2), NA_real_),
     delta_smbbeta_sq2 = if_else(smbbeta_post ^ 2 > 0 & smbbeta_pre ^ 2 > 0, log(smbbeta_post ^ 2 / smbbeta_pre ^ 2), NA_real_),
     delta_hmlbeta_sq2 = if_else(hmlbeta_post ^ 2 > 0 & hmlbeta_pre ^ 2 > 0, log(hmlbeta_post ^ 2 / hmlbeta_pre ^ 2), NA_real_),
     delta_umdbeta_sq2 = if_else(umdbeta_post ^ 2 > 0 & umdbeta_pre ^ 2 > 0, log(umdbeta_post ^ 2 / umdbeta_pre ^ 2), NA_real_),
-
+    
     # ── VIX change ────────────────────────────────────────────────────────
     delta_vix = vixpost - vixpre
   ) |>

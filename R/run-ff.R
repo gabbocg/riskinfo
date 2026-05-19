@@ -1,7 +1,7 @@
 # Fama-French 4-factor OLS for each (permno, actdate) group
 # Returns betas and idiosyncratic volatility with suffixes b_sfx / v_sfx.
-
 run_ff <- function(df, b_sfx, v_sfx) {
+  
   df |>
     group_by(permno, actdate) |>
     group_modify(~ {
@@ -22,4 +22,5 @@ run_ff <- function(df, b_sfx, v_sfx) {
       )
     }) |>
     ungroup()
+  
 }
