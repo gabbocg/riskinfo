@@ -99,4 +99,4 @@ and $t_{\text{post}} = +1$ relative to the event date.
 
 ## References
 
-- Smith, K. C. and So, E. C. (2021). Measuring Risk Information. *Journal of Accounting Research*, 59(5), 1729–1797. https://doi.org/10.1111/1475-679X.12377
+- Smith, K. C. and So, E. C. (2021). Measuring Risk Information. *Journal of Accounting Research*, 59(5), 1729–1797.
